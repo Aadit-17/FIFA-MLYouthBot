@@ -1,35 +1,24 @@
 import discord
 import os
 import random
+from discord.ext import commands
 from keep_alive import keep_alive
 import requests
+import joblib
 
 requests.get('https://tender-marred-packet.glitch.me/')
+intents = discord.Intents.default()
+intents.message_content = True
+bot = commands.Bot(command_prefix='$', intents=intents)
 
-intent = discord.Intents.default()
-intent.members = True
-intent.message_content = True
-client = discord.Client(intents=intent)
-
-
-@client.event
+@bot.event
 async def on_ready():
-  print('We have logged in as {0.user} '.format(client))
+    print('We have logged in as {0.user} '.format(bot))
 
+@bot.command()
+async def youth(ctx, command):
 
-@client.event
-async def on_message(message):
-  if message.author == client.user:
-    return
-
-  if message.content.startswith('$retire'):
-    x = random.randint(1, 100)
-    await message.channel.send(x)
-
-  if message.content.startswith('$youth'):
-    command = message.content.split('$youth')[1].strip().lower()
-
-    bucketsPoor = [
+    buckets_poor = [
         (0, 50, 72, 65, 88),
         (5, 50, 55, 65, 70),
         (9, 55, 60, 70, 74),
@@ -37,7 +26,7 @@ async def on_message(message):
         (19, 63, 67, 77, 82),
         (20, 68, 70, 80, 85)
     ]
-    bucketsBasic = [
+    buckets_basic = [
         (0, 50, 72, 65, 88),
         (4, 50, 55, 65, 70),
         (10, 55, 60, 70, 74),
@@ -46,7 +35,7 @@ async def on_message(message):
         (19, 68, 70, 80, 85),
         (20, 70, 72, 84, 88)
     ]
-    bucketsAverage = [
+    buckets_decent = [
         (0, 50, 72, 65, 88),
         (5, 50, 55, 65, 70),
         (9, 55, 60, 70, 74),
@@ -55,7 +44,7 @@ async def on_message(message):
         (19, 68, 70, 80, 85),
         (20, 70, 72, 84, 88)
     ]
-    bucketsGood = [
+    buckets_good = [
         (0, 50, 72, 65, 88),
         (5, 50, 55, 65, 70),
         (9, 55, 60, 70, 74),
@@ -64,7 +53,7 @@ async def on_message(message):
         (19, 68, 70, 80, 85),
         (20, 70, 72, 84, 88)
     ]
-    bucketsGreat = [
+    buckets_great = [
         (0, 50, 72, 65, 88),
         (4, 50, 55, 65, 70),
         (8, 55, 60, 70, 74),
@@ -73,7 +62,7 @@ async def on_message(message):
         (18, 68, 70, 80, 85),
         (20, 70, 72, 84, 88)
     ]
-    bucketsElite = [
+    buckets_elite = [
         (0, 50, 72, 65, 88),
         (4, 50, 55, 65, 70),
         (8, 55, 60, 70, 74),
@@ -83,18 +72,18 @@ async def on_message(message):
         (20, 70, 72, 84, 88)
     ]
     bucket_levels = {
-        'poor': bucketsPoor,
-        'basic': bucketsBasic,
-        'average': bucketsAverage,
-        'good': bucketsGood,
-        'great': bucketsGreat,
-        'elite': bucketsElite
+        'poor': buckets_poor,
+        'basic': buckets_basic,
+        'decent': buckets_decent,
+        'good': buckets_good,
+        'great': buckets_great,
+        'elite': buckets_elite
     }
     if command in bucket_levels:
         buckets = bucket_levels[command]
     else:
-        await message.channel.send("Invalid bucket, default to poor")
-        buckets = bucketsPoor
+        await ctx.send("Invalid bucket, default to poor")
+        buckets = buckets_poor
     random_num = random.randint(0, 20)
     selected_bucket = None
     for bucket in buckets:
@@ -106,7 +95,7 @@ async def on_message(message):
 
     positions = ["GK", "CB", "FB/WB", "CDM", "CM", "CAM", "WM/W", "CF/ST"]
     traits = [
-        "Quick Learner", "Leadership", "Teachers Pet", "Consistent", "Second Nation"
+      "Versatile", "Quick Learner", "Leadership", "Teachers Pet", "Consistent", "Second Nation"
     ]
     Player_Position = random.choice(positions)
     if Player_Position == "GK":
@@ -114,7 +103,7 @@ async def on_message(message):
     Player_Trait = random.choice(traits)
 
     versatile_traits = {
-        "CB": ["Complete Defender (DM, WB, FB, CB)", "DLP (CM, DM, CB)"],
+        "CB": ["Complete Defender (DM, WB, FB, CB)", "DLP (CM, DM, WB, FB)"],
         "FB/WB": ["Complete Defender (DM, WB, FB, CB)", "Wideman (FB, WB, WM, W)", "BTB (CM, DM, WB, FB)"],
         "CDM": ["Complete Defender (DM, WB, FB, CB)", "Complete Midfielder (AM, CM, WM, DM)", "BTB (CM, DM, WB, FB)",
                 "DLP (CM, DM, CB)"],
@@ -143,33 +132,40 @@ async def on_message(message):
             Age = random.randint(age_range[0], age_range[1])
             break
 
-    PositionP = "Position = " + Player_Position
-    AgeP = "Age = " + str(Age)
-    RatingP = "Rating/Potential = " + str(Rating) + "/" + str(Potential)
-    TraitP = "Trait = " + Player_Trait
-    VersatileP = "Versatile Trait = " + VerTrait
-    await message.channel.send(PositionP)
-    await message.channel.send(AgeP)
-    await message.channel.send(RatingP)
-    await message.channel.send(TraitP)
-    await message.channel.send(VersatileP)
+    PositionP = Player_Position
+    AgeP = str(Age)
+    RatingP = str(Rating) + "/" + str(Potential)
+    TraitP = Player_Trait
+    VersatileP = VerTrait
 
     conditions = {
-    (Age == 17 and Player_Position == "CM" and Rating <= 53): ("you got gavi", 'gavi.png'),
-    ((Age == 23 or Age == 22) and Rating == 70 and Potential == 84): ("Congrats on finding the next messi", 'messi.png'),
-    (Rating >= 68 and Player_Position == "WM/W"): ("Project mbappe is here", 'mbappe.png'),
-    (Rating >= 68 and Player_Position == "CF/ST"): ("The next robot?", 'haaland.png'),
-    (Growth >= 20): ("damn that's a lot of growth, hope he doesn't turn out like this forgotten wonderkid", 'mastour.png'),
-    (VerTrait == "BTB (CM, DM, WB, FB)" and Rating >= 65): ("this is fede the b2b god", 'fede.png'),
-    (Player_Position == "FB/WB" and Rating >= 67): ("MARCELO REGEN???", 'marcelo.png'),
-    (Player_Position == "GK" and Rating >= 68): ("looks cute hopefully he won't lie about his time with puyol", 'iker.png')
-}
+        (Age == 17 and Player_Position == "CM" and Rating <= 53): ("you got gavi", 'gavi.png'),
+        ((Age == 23 or Age == 22) and Rating == 70 and Potential == 84): ("Congrats on finding the next messi", 'messi.png'),
+        (Rating >= 68 and Player_Position == "WM/W"): ("Project mbappe is here", 'mbappe.png'),
+        (Rating >= 68 and Player_Position == "CF/ST"): ("The next robot?", 'haaland.png'),
+        (Growth >= 20): ("damn that's a lot of growth, hope he doesn't turn out like this forgotten wonderkid", 'mastour.png'),
+        (VerTrait == "BTB (CM, DM, WB, FB)" and Rating >= 65): ("this is fede the b2b god", 'fede.png'),
+        (Player_Position == "FB/WB" and Rating >= 67): ("MARCELO REGEN???", 'marcelo.png'),
+        (Player_Position == "GK" and Rating >= 68): ("looks cute hopefully he won't lie about his time with puyol", 'iker.png')
+    }
+
+    embed = discord.Embed(
+        title="Youth Player",
+        color=discord.Color.green()
+    )
+
+    embed.add_field(name="Position", value=PositionP, inline=True)
+    embed.add_field(name="Age", value=AgeP, inline=True)
+    embed.add_field(name="Rating/Potential", value=RatingP, inline=True)
+    embed.add_field(name="Trait", value=TraitP, inline=True)
+    embed.add_field(name="Versatile Trait", value=VersatileP, inline=True)
 
     for condition, (message_text, image_file) in conditions.items():
-      if condition:
-        await message.channel.send(message_text, file=discord.File(image_file))
-
+        if condition:
+            file = discord.File(image_file)
+            embed.set_footer(text=message_text)
+            await ctx.send(file=file)
+    await ctx.send(embed=embed)
 
 keep_alive()
-
-client.run(os.getenv("TOKEN"))
+bot.run(os.getenv("TOKEN"))
