@@ -11,9 +11,27 @@ intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix='$', intents=intents)
 
+
 @bot.event
 async def on_ready():
     print('We have logged in as {0.user} '.format(bot))
+
+
+@bot.command()
+async def retire(ctx, threshold: int):
+    x = random.randint(1, 100)
+    embed = discord.Embed(
+        title="Verdict",
+        color=discord.Color.green()
+    )
+    if x <= threshold:
+        retired = True
+    else:
+        retired = False
+    embed.add_field(name="Value", value=x, inline=True)
+    embed.add_field(name="Retired?", value=retired, inline=True)
+    await ctx.send(embed=embed)
+
 
 @bot.command()
 async def youth(ctx, command):
