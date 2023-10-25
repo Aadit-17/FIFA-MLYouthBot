@@ -5,17 +5,25 @@ from discord.ext import commands
 from keep_alive import keep_alive
 import requests
 import joblib
+import pandas as pd
+from sklearn.preprocessing import LabelEncoder
+from xgboost import XGBRegressor
 
+model = joblib.load("xgboost_model.joblib")
+label_encoders={}
+categorical_columns = ['Team', 'Position', 'Continent']
+for col in categorical_columns:
+    filename = f'label_encoder_{col}.joblib'
+    label_encoder = joblib.load(filename)
+    label_encoders[col] = label_encoder
 requests.get('https://tender-marred-packet.glitch.me/')
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix='$', intents=intents)
 
-
 @bot.event
 async def on_ready():
     print('We have logged in as {0.user} '.format(bot))
-
 
 @bot.command()
 async def retire(ctx, threshold: int):
@@ -32,62 +40,61 @@ async def retire(ctx, threshold: int):
     embed.add_field(name="Retired?", value=retired, inline=True)
     await ctx.send(embed=embed)
 
-
 @bot.command()
 async def youth(ctx, command):
 
     buckets_poor = [
-        (0, 50, 72, 65, 88),
+        (0, 50, 74, 65, 88),
         (5, 50, 55, 65, 70),
         (9, 55, 60, 70, 74),
         (16, 60, 63, 74, 77),
         (19, 63, 67, 77, 82),
-        (20, 68, 70, 80, 85)
+        (20, 68, 72, 80, 85)
     ]
     buckets_basic = [
-        (0, 50, 72, 65, 88),
+        (0, 50, 74, 65, 88),
         (4, 50, 55, 65, 70),
         (10, 55, 60, 70, 74),
         (15, 60, 63, 74, 77),
         (18, 63, 67, 77, 82),
-        (19, 68, 70, 80, 85),
-        (20, 70, 72, 84, 88)
+        (19, 68, 72, 80, 85),
+        (20, 70, 74, 84, 88)
     ]
     buckets_decent = [
-        (0, 50, 72, 65, 88),
+        (0, 50, 74, 65, 88),
         (5, 50, 55, 65, 70),
         (9, 55, 60, 70, 74),
         (14, 60, 63, 74, 77),
         (17, 63, 67, 77, 82),
-        (19, 68, 70, 80, 85),
-        (20, 70, 72, 84, 88)
+        (19, 68, 72, 80, 85),
+        (20, 70, 74, 84, 88)
     ]
     buckets_good = [
-        (0, 50, 72, 65, 88),
+        (0, 50, 74, 65, 88),
         (5, 50, 55, 65, 70),
         (9, 55, 60, 70, 74),
         (13, 60, 63, 74, 77),
-        (17, 63, 67, 77, 82),
-        (19, 68, 70, 80, 85),
-        (20, 70, 72, 84, 88)
+        (17, 63, 69, 77, 82),
+        (19, 68, 72, 80, 85),
+        (20, 72, 74, 84, 88)
     ]
     buckets_great = [
-        (0, 50, 72, 65, 88),
+        (0, 50, 74, 65, 88),
         (4, 50, 55, 65, 70),
         (8, 55, 60, 70, 74),
         (12, 60, 63, 74, 77),
-        (16, 63, 67, 77, 82),
-        (18, 68, 70, 80, 85),
-        (20, 70, 72, 84, 88)
+        (16, 63, 69, 77, 82),
+        (18, 70, 72, 80, 85),
+        (20, 72, 74, 84, 88)
     ]
     buckets_elite = [
-        (0, 50, 72, 65, 88),
+        (0, 50, 74, 65, 88),
         (4, 50, 55, 65, 70),
         (8, 55, 60, 70, 74),
-        (12, 60, 63, 74, 77),
-        (15, 63, 67, 77, 82),
-        (18, 68, 70, 80, 85),
-        (20, 70, 72, 84, 88)
+        (12, 60, 68, 74, 77),
+        (15, 68, 70, 77, 82),
+        (18, 70, 72, 82, 86),
+        (20, 72, 74, 84, 88)
     ]
     bucket_levels = {
         'poor': buckets_poor,
@@ -174,16 +181,49 @@ async def youth(ctx, command):
 
     embed.add_field(name="Position", value=PositionP, inline=True)
     embed.add_field(name="Age", value=AgeP, inline=True)
-    embed.add_field(name="Rating/Potential", value=RatingP, inline=True)
+    embed.add_field(name="Rating", value=RatingP, inline=True)
     embed.add_field(name="Trait", value=TraitP, inline=True)
-    embed.add_field(name="Versatile Trait", value=VersatileP, inline=True)
+    embed.add_field(name="VersatileP", value=VersatileP, inline=True)
 
     for condition, (message_text, image_file) in conditions.items():
         if condition:
-            file = discord.File(image_file)
-            embed.set_footer(text=message_text)
-            await ctx.send(file=file)
+            embed.set_image(url=image_file)
+
     await ctx.send(embed=embed)
+
+@bot.command()
+async def scout(ctx, team: str, position: str, continent: str):
+    team = team.lower()
+    age = random.randint(18, 25)
+    input_features = {
+        "Team": team,
+        "Position": position,
+        "Continent": continent,
+        "Age": age,
+        "S11": 1
+    }
+    inputdf = pd.DataFrame(input_features, index=[0])
+    for col, le in label_encoders.items():
+        if col in inputdf:
+          inputdf[col] = inputdf[col].str.lower()
+          inputdf[col] = le.transform(inputdf[col])
+
+    rating = model.predict(inputdf)
+    potential = rating + random.randint(5, 15)
+    rating_str = str(rating)
+
+    embed = discord.Embed(
+        title="Scouted Player",
+        color=discord.Color.green()
+    )
+    embed.add_field(name="Team", value=team, inline=True)
+    embed.add_field(name="Position", value=position, inline=True)
+    embed.add_field(name="Continent", value=continent, inline=True)
+    embed.add_field(name="Age", value=age, inline=True)
+    embed.add_field(name="Rating", value=rating_str, inline=True)
+    embed.add_field(name="Potential", value=potential, inline=True)
+    await ctx.send(embed=embed)
+
 
 keep_alive()
 bot.run(os.getenv("TOKEN"))
