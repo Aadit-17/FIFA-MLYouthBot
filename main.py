@@ -10,7 +10,7 @@ from sklearn.preprocessing import LabelEncoder
 from xgboost import XGBRegressor
 
 model = joblib.load("xgboost_model.joblib")
-label_encoders={}
+label_encoders = {}
 categorical_columns = ['Team', 'Position', 'Continent']
 for col in categorical_columns:
     filename = f'label_encoder_{col}.joblib'
@@ -21,9 +21,11 @@ intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix='$', intents=intents)
 
+
 @bot.event
 async def on_ready():
     print('We have logged in as {0.user} '.format(bot))
+
 
 @bot.command()
 async def retire(ctx, threshold: int):
@@ -40,9 +42,9 @@ async def retire(ctx, threshold: int):
     embed.add_field(name="Retired?", value=retired, inline=True)
     await ctx.send(embed=embed)
 
+
 @bot.command()
 async def youth(ctx, command):
-
     buckets_poor = [
         (0, 50, 74, 65, 88),
         (5, 50, 55, 65, 70),
@@ -120,7 +122,7 @@ async def youth(ctx, command):
 
     positions = ["GK", "CB", "FB/WB", "CDM", "CM", "CAM", "WM/W", "CF/ST"]
     traits = [
-      "Versatile", "Quick Learner", "Leadership", "Teachers Pet", "Consistent", "Second Nation"
+        "Versatile", "Quick Learner", "Leadership", "Teachers Pet", "Consistent", "Second Nation"
     ]
     Player_Position = random.choice(positions)
     if Player_Position == "GK":
@@ -165,13 +167,16 @@ async def youth(ctx, command):
 
     conditions = {
         (Age == 17 and Player_Position == "CM" and Rating <= 53): ("you got gavi", 'gavi.png'),
-        ((Age == 23 or Age == 22) and Rating == 70 and Potential == 84): ("Congrats on finding the next messi", 'messi.png'),
+        ((Age == 23 or Age == 22) and Rating == 70 and Potential == 84): (
+        "Congrats on finding the next messi", 'messi.png'),
         (Rating >= 68 and Player_Position == "WM/W"): ("Project mbappe is here", 'mbappe.png'),
         (Rating >= 68 and Player_Position == "CF/ST"): ("The next robot?", 'haaland.png'),
-        (Growth >= 20): ("damn that's a lot of growth, hope he doesn't turn out like this forgotten wonderkid", 'mastour.png'),
+        (Growth >= 20): (
+        "damn that's a lot of growth, hope he doesn't turn out like this forgotten wonderkid", 'mastour.png'),
         (VerTrait == "BTB (CM, DM, WB, FB)" and Rating >= 65): ("this is fede the b2b god", 'fede.png'),
         (Player_Position == "FB/WB" and Rating >= 67): ("MARCELO REGEN???", 'marcelo.png'),
-        (Player_Position == "GK" and Rating >= 68): ("looks cute hopefully he won't lie about his time with puyol", 'iker.png')
+        (Player_Position == "GK" and Rating >= 68): (
+        "looks cute hopefully he won't lie about his time with puyol", 'iker.png')
     }
 
     embed = discord.Embed(
@@ -191,10 +196,11 @@ async def youth(ctx, command):
 
     await ctx.send(embed=embed)
 
+
 @bot.command()
 async def scout(ctx, team: str, position: str, continent: str):
     team = team.lower()
-    age = random.randint(18, 25)
+    age = random.randint(18, 29)
     input_features = {
         "Team": team,
         "Position": position,
@@ -205,11 +211,22 @@ async def scout(ctx, team: str, position: str, continent: str):
     inputdf = pd.DataFrame(input_features, index=[0])
     for col, le in label_encoders.items():
         if col in inputdf:
-          inputdf[col] = inputdf[col].str.lower()
-          inputdf[col] = le.transform(inputdf[col])
+            inputdf[col] = inputdf[col].str.lower()
+            inputdf[col] = le.transform(inputdf[col])
 
     rating = model.predict(inputdf)
-    potential = rating + random.randint(5, 15)
+    age_ranges = {
+        (18, 20): (10, 16),
+        (21, 23): (7, 12),
+        (24, 25): (3, 5),
+        (26, 27): (1, 2),
+        (28, 29): (0, 1)
+    }
+    for (min_age, max_age), (min_growth, max_growth) in age_ranges.items():
+        if min_age <= age <= max_age:
+            growth = random.randint(min_growth, max_growth)
+            break
+    potential = rating + growth
     rating_str = str(rating)
 
     embed = discord.Embed(
